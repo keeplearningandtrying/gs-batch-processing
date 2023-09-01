@@ -29,7 +29,7 @@ public class BatchConfiguration {
 
 	@Bean
 	public FlatFileItemReader<Person> reader() {
-		FlatFileItemReader reader = new FlatFileItemReaderBuilder<Person>()
+		FlatFileItemReader<Person> reader = new FlatFileItemReaderBuilder<Person>()
 				.name("personItemReader")
 				.resource(new ClassPathResource("sample-data.csv"))
 				.delimited()
