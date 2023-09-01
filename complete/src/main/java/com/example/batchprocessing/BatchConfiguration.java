@@ -15,6 +15,8 @@ import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.launch.support.SimpleJobOperator;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
@@ -34,7 +36,7 @@ public class BatchConfiguration {
 	// tag::readerwriterprocessor[]
 	/*
 	@Bean
-	public ExceptionThrowingItemReaderProxy<Person> reader() {
+	public ItemReader<Person> reader() {
 		FlatFileItemReader reader = new FlatFileItemReaderBuilder<Person>()
 				.name("personItemReader")
 				.resource(new ClassPathResource("sample-data.csv"))
@@ -47,7 +49,7 @@ public class BatchConfiguration {
 				})
 				.build();
 		ExceptionThrowingItemReaderProxy proxyReader = new ExceptionThrowingItemReaderProxy<>();
-		proxyReader.setDelegate(reader);;
+		proxyReader.setDelegate(reader);
 		return proxyReader;
 	}
 	*/
@@ -74,6 +76,20 @@ public class BatchConfiguration {
 		return new PersonItemProcessor();
 	}
 
+	/*
+	@Bean
+	public ExceptionThrowingItemWriterProxy<Person> writer(DataSource dataSource) {
+		JdbcBatchItemWriter<Person> itemWriter = new JdbcBatchItemWriterBuilder<Person>()
+				.itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
+				.sql("INSERT INTO people (first_name, last_name) VALUES (:firstName, :lastName)")
+				.dataSource(dataSource)
+				.build();
+		ExceptionThrowingItemWriterProxy writerProxy = new ExceptionThrowingItemWriterProxy<>();
+		writerProxy.setDelegate(itemWriter);
+		return writerProxy;
+	}
+	*/
+	
 	@Bean
 	public JdbcBatchItemWriter<Person> writer(DataSource dataSource) {
 		return new JdbcBatchItemWriterBuilder<Person>()
@@ -99,8 +115,9 @@ public class BatchConfiguration {
 	@Bean
 	public Step step1(JobRepository jobRepository,
 			PlatformTransactionManager transactionManager, JdbcBatchItemWriter<Person> writer) {
+			// PlatformTransactionManager transactionManager, ItemWriter<Person> writer) {
 		return new StepBuilder("step1", jobRepository)
-				.<Person, Person>chunk(10, transactionManager)
+				.<Person, Person>chunk(1, transactionManager)
 				.reader(reader())
 				.processor(processor())
 				.writer(writer)

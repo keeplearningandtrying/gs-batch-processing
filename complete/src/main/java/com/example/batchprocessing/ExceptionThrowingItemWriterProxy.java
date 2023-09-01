@@ -1,8 +1,10 @@
 package com.example.batchprocessing;
 
 import org.springframework.batch.core.UnexpectedJobExecutionException;
+import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.lang.Nullable;
 
 /**
@@ -13,15 +15,13 @@ import org.springframework.lang.Nullable;
  * @author Lucas Ward
  *
  */
-public class ExceptionThrowingItemReaderProxy<T> implements ItemReader<T> {
-// public class ExceptionThrowingItemReaderProxy<T> extends FlatFileItemReader<T> {
+public class ExceptionThrowingItemWriterProxy<T> implements ItemWriter<T> {
 
 	private int counter = 0;
 
 	private int throwExceptionOnRecordNumber = 4;
 
-	// private FlatFileItemReader<T> delegate;
-	private ItemReader<T> delegate;
+	private JdbcBatchItemWriter<T> delegate;
 
 	/**
 	 * @param throwExceptionOnRecordNumber The number of record on which exception should
@@ -31,21 +31,18 @@ public class ExceptionThrowingItemReaderProxy<T> implements ItemReader<T> {
 		this.throwExceptionOnRecordNumber = throwExceptionOnRecordNumber;
 	}
 
+	public void setDelegate(JdbcBatchItemWriter<T> delegate) {
+		this.delegate = delegate;
+	}
+
 	@Nullable
 	@Override
-	public T read() throws Exception {
-
+	public void write(Chunk<? extends T> arg0) throws Exception {
 		counter++;
 		if (counter == throwExceptionOnRecordNumber) {
 			throw new UnexpectedJobExecutionException("Planned failure on count=" + counter);
 		}
-
-		return delegate.read();
-		// return read();
-	}
-
-	public void setDelegate(ItemReader<T> delegate) {
-		this.delegate = delegate;
+		delegate.write(arg0);
 	}
 
 }

@@ -19,11 +19,11 @@ public class BatchRestartRunner implements CommandLineRunner {
 	public void run(String... args) throws Exception {
 		Long restartId;
 		try {
-			List<Long> ids = jobOperator.getExecutions(1L);
+			List<Long> ids = jobOperator.getExecutions(35L); // job instance id
 			System.out.println("=====");
 			System.out.println(ids);
 			System.out.println("=====");
-			jobOperator.restart(17L);
+			jobOperator.restart(40L); // job execution id
 		} catch (NoSuchJobInstanceException e) {
 			e.printStackTrace();
 		}
