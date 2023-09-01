@@ -4,8 +4,15 @@ import javax.sql.DataSource;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.JobRegistry;
+import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
+import org.springframework.batch.core.explore.JobExplorer;
+import org.springframework.batch.core.explore.support.JobExplorerFactoryBean;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.core.launch.support.SimpleJobOperator;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
@@ -14,10 +21,12 @@ import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilde
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 public class BatchConfiguration {
@@ -26,14 +35,16 @@ public class BatchConfiguration {
 	@Bean
 	public FlatFileItemReader<Person> reader() {
 		return new FlatFileItemReaderBuilder<Person>()
-			.name("personItemReader")
-			.resource(new ClassPathResource("sample-data.csv"))
-			.delimited()
-			.names(new String[]{"firstName", "lastName"})
-			.fieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {{
-				setTargetType(Person.class);
-			}})
-			.build();
+				.name("personItemReader")
+				.resource(new ClassPathResource("sample-data.csv"))
+				.delimited()
+				.names(new String[] { "firstName", "lastName" })
+				.fieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {
+					{
+						setTargetType(Person.class);
+					}
+				})
+				.build();
 	}
 
 	@Bean
@@ -44,10 +55,10 @@ public class BatchConfiguration {
 	@Bean
 	public JdbcBatchItemWriter<Person> writer(DataSource dataSource) {
 		return new JdbcBatchItemWriterBuilder<Person>()
-			.itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
-			.sql("INSERT INTO people (first_name, last_name) VALUES (:firstName, :lastName)")
-			.dataSource(dataSource)
-			.build();
+				.itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
+				.sql("INSERT INTO people (first_name, last_name) VALUES (:firstName, :lastName)")
+				.dataSource(dataSource)
+				.build();
 	}
 	// end::readerwriterprocessor[]
 
@@ -56,22 +67,54 @@ public class BatchConfiguration {
 	public Job importUserJob(JobRepository jobRepository,
 			JobCompletionNotificationListener listener, Step step1) {
 		return new JobBuilder("importUserJob", jobRepository)
-			.incrementer(new RunIdIncrementer())
-			.listener(listener)
-			.flow(step1)
-			.end()
-			.build();
+				.incrementer(new RunIdIncrementer())
+				.listener(listener)
+				.flow(step1)
+				.end()
+				.build();
 	}
 
 	@Bean
 	public Step step1(JobRepository jobRepository,
 			PlatformTransactionManager transactionManager, JdbcBatchItemWriter<Person> writer) {
 		return new StepBuilder("step1", jobRepository)
-			.<Person, Person> chunk(10, transactionManager)
-			.reader(reader())
-			.processor(processor())
-			.writer(writer)
-			.build();
+				.<Person, Person>chunk(10, transactionManager)
+				.reader(reader())
+				.processor(processor())
+				.writer(writer)
+				.build();
 	}
 	// end::jobstep[]
+
+	@Autowired
+   JobRegistry jobRegistry;
+
+   @Bean
+   public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor() {
+       JobRegistryBeanPostProcessor postProcessor = new JobRegistryBeanPostProcessor();
+       postProcessor.setJobRegistry(jobRegistry);
+       return postProcessor;
+   }
+
+	// @Bean
+	public JobOperator jobOperator(final JobLauncher jobLauncher, final JobRepository jobRepository,
+			final JobRegistry jobRegistry, final JobExplorer jobExplorer) {
+		final SimpleJobOperator jobOperator = new SimpleJobOperator();
+		jobOperator.setJobLauncher(jobLauncher);
+		jobOperator.setJobRepository(jobRepository);
+		jobOperator.setJobRegistry(jobRegistry);
+		jobOperator.setJobExplorer(jobExplorer);
+		return jobOperator;
+	}
+
+	// @Bean
+	public JobExplorer jobExplorer(final DataSource dataSource) throws Exception {
+		final JobExplorerFactoryBean bean = new JobExplorerFactoryBean();
+		bean.setDataSource(dataSource);
+		bean.setTablePrefix("BATCH_");
+		bean.setJdbcOperations(new JdbcTemplate(dataSource));
+		bean.afterPropertiesSet();
+		return bean.getObject();
+	}
+
 }
