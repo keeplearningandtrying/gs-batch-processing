@@ -1,22 +1,15 @@
+
 package com.example.batchprocessing;
 
 import javax.sql.DataSource;
-
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
-import org.springframework.batch.core.explore.JobExplorer;
-import org.springframework.batch.core.explore.support.JobExplorerFactoryBean;
 import org.springframework.batch.core.job.builder.JobBuilder;
-import org.springframework.batch.core.launch.JobLauncher;
-import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.launch.support.SimpleJobOperator;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
-import org.springframework.batch.item.ItemReader;
-import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
@@ -28,31 +21,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 public class BatchConfiguration {
 
 	// tag::readerwriterprocessor[]
-	/*
-	@Bean
-	public ItemReader<Person> reader() {
-		FlatFileItemReader reader = new FlatFileItemReaderBuilder<Person>()
-				.name("personItemReader")
-				.resource(new ClassPathResource("sample-data.csv"))
-				.delimited()
-				.names(new String[] { "firstName", "lastName" })
-				.fieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {
-					{
-						setTargetType(Person.class);
-					}
-				})
-				.build();
-		ExceptionThrowingItemReaderProxy proxyReader = new ExceptionThrowingItemReaderProxy<>();
-		proxyReader.setDelegate(reader);
-		return proxyReader;
-	}
-	*/
 
 	@Bean
 	public FlatFileItemReader<Person> reader() {
@@ -70,26 +43,11 @@ public class BatchConfiguration {
 		return reader;
 	}
 
-
 	@Bean
 	public PersonItemProcessor processor() {
 		return new PersonItemProcessor();
 	}
 
-	/*
-	@Bean
-	public ExceptionThrowingItemWriterProxy<Person> writer(DataSource dataSource) {
-		JdbcBatchItemWriter<Person> itemWriter = new JdbcBatchItemWriterBuilder<Person>()
-				.itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
-				.sql("INSERT INTO people (first_name, last_name) VALUES (:firstName, :lastName)")
-				.dataSource(dataSource)
-				.build();
-		ExceptionThrowingItemWriterProxy writerProxy = new ExceptionThrowingItemWriterProxy<>();
-		writerProxy.setDelegate(itemWriter);
-		return writerProxy;
-	}
-	*/
-	
 	@Bean
 	public JdbcBatchItemWriter<Person> writer(DataSource dataSource) {
 		return new JdbcBatchItemWriterBuilder<Person>()
@@ -115,7 +73,6 @@ public class BatchConfiguration {
 	@Bean
 	public Step step1(JobRepository jobRepository,
 			PlatformTransactionManager transactionManager, JdbcBatchItemWriter<Person> writer) {
-			// PlatformTransactionManager transactionManager, ItemWriter<Person> writer) {
 		return new StepBuilder("step1", jobRepository)
 				.<Person, Person>chunk(1, transactionManager)
 				.reader(reader())

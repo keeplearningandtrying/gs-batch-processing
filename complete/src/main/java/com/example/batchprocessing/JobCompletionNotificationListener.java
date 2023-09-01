@@ -43,34 +43,5 @@ public class JobCompletionNotificationListener implements JobExecutionListener {
 					rs.getString(2))
 			).forEach(person -> log.info("Found <{{}}> in the database.", person));
 		}
-
-		/*
-		Long restartId;
-		try {
-			List<Long> ids = jobOperator.getExecutions(1L);
-			System.out.println("=====");
-			System.out.println(ids);
-			System.out.println("=====");
-			jobOperator.restart(1L);
-		} catch (NoSuchJobInstanceException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JobInstanceAlreadyCompleteException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchJobExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (NoSuchJobException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JobRestartException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JobParametersInvalidException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		*/
 	}
 }
