@@ -32,9 +32,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class BatchConfiguration {
 
 	// tag::readerwriterprocessor[]
+	/*
 	@Bean
-	public FlatFileItemReader<Person> reader() {
-		return new FlatFileItemReaderBuilder<Person>()
+	public ExceptionThrowingItemReaderProxy<Person> reader() {
+		FlatFileItemReader reader = new FlatFileItemReaderBuilder<Person>()
 				.name("personItemReader")
 				.resource(new ClassPathResource("sample-data.csv"))
 				.delimited()
@@ -45,7 +46,28 @@ public class BatchConfiguration {
 					}
 				})
 				.build();
+		ExceptionThrowingItemReaderProxy proxyReader = new ExceptionThrowingItemReaderProxy<>();
+		proxyReader.setDelegate(reader);;
+		return proxyReader;
 	}
+	*/
+
+	@Bean
+	public FlatFileItemReader<Person> reader() {
+		FlatFileItemReader reader = new FlatFileItemReaderBuilder<Person>()
+				.name("personItemReader")
+				.resource(new ClassPathResource("sample-data.csv"))
+				.delimited()
+				.names(new String[] { "firstName", "lastName" })
+				.fieldSetMapper(new BeanWrapperFieldSetMapper<Person>() {
+					{
+						setTargetType(Person.class);
+					}
+				})
+				.build();
+		return reader;
+	}
+
 
 	@Bean
 	public PersonItemProcessor processor() {
@@ -87,34 +109,13 @@ public class BatchConfiguration {
 	// end::jobstep[]
 
 	@Autowired
-   JobRegistry jobRegistry;
+	JobRegistry jobRegistry;
 
-   @Bean
-   public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor() {
-       JobRegistryBeanPostProcessor postProcessor = new JobRegistryBeanPostProcessor();
-       postProcessor.setJobRegistry(jobRegistry);
-       return postProcessor;
-   }
-
-	// @Bean
-	public JobOperator jobOperator(final JobLauncher jobLauncher, final JobRepository jobRepository,
-			final JobRegistry jobRegistry, final JobExplorer jobExplorer) {
-		final SimpleJobOperator jobOperator = new SimpleJobOperator();
-		jobOperator.setJobLauncher(jobLauncher);
-		jobOperator.setJobRepository(jobRepository);
-		jobOperator.setJobRegistry(jobRegistry);
-		jobOperator.setJobExplorer(jobExplorer);
-		return jobOperator;
-	}
-
-	// @Bean
-	public JobExplorer jobExplorer(final DataSource dataSource) throws Exception {
-		final JobExplorerFactoryBean bean = new JobExplorerFactoryBean();
-		bean.setDataSource(dataSource);
-		bean.setTablePrefix("BATCH_");
-		bean.setJdbcOperations(new JdbcTemplate(dataSource));
-		bean.afterPropertiesSet();
-		return bean.getObject();
+	@Bean
+	public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor() {
+		JobRegistryBeanPostProcessor postProcessor = new JobRegistryBeanPostProcessor();
+		postProcessor.setJobRegistry(jobRegistry);
+		return postProcessor;
 	}
 
 }

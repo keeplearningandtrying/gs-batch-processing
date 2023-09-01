@@ -12,20 +12,20 @@ import org.springframework.stereotype.Component;
 @Order(value = 2)
 public class BatchRestartRunner implements CommandLineRunner {
 
-    @Autowired
-    JobOperator jobOperator;
+	@Autowired
+	JobOperator jobOperator;
 
-    @Override
-    public void run(String... args) throws Exception {
-        	Long restartId;
+	@Override
+	public void run(String... args) throws Exception {
+		Long restartId;
 		try {
 			List<Long> ids = jobOperator.getExecutions(1L);
 			System.out.println("=====");
 			System.out.println(ids);
 			System.out.println("=====");
-			jobOperator.restart(111L);
+			jobOperator.restart(17L);
 		} catch (NoSuchJobInstanceException e) {
 			e.printStackTrace();
 		}
-    }
+	}
 }
